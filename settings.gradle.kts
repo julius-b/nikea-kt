@@ -1,0 +1,3 @@
+
+rootProject.name = "nikea-kt"
+
