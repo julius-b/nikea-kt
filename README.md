@@ -54,6 +54,9 @@ A server acts as middleman and provides the keys & signatures, the clients just 
   - Nikea uses [Libsodium bindings for Kotlin Multiplatform](https://github.com/ionspin/kotlin-multiplatform-libsodium) for Curve25519
 - Libsodium's `crypto_box()` (`scalarmult()` + hash + `secretbox()`) does not implement hash ratcheting, so this lib is different
 
+## Usage
+[Publish your library to the local Maven repository](https://kotlinlang.org/docs/multiplatform-library.html#publish-your-library-to-the-local-maven-repository)
+
 ## Algorithms
 ### Ed25519 & X25519
 Ed25519 is a deterministic signature scheme & X25519 is an Elliptic Curve Diffie-Hellman (ECDH) key agreement scheme. Both use Curve25519 and are comparably fast and efficient.

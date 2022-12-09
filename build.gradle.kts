@@ -1,8 +1,9 @@
 plugins {
     kotlin("multiplatform") version "1.7.20"
+    id("maven-publish")
 }
 
-group = "ch.oxc"
+group = "ch.oxc.nikea"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -17,6 +18,15 @@ kotlin {
         withJava()
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
+        }
+        compilations {
+            val test by getting {
+                tasks.withType<Test> {
+                    this.testLogging {
+                        this.showStandardStreams = true
+                    }
+                }
+            }
         }
     }
 

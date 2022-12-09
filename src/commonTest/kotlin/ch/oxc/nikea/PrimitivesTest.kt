@@ -22,7 +22,7 @@ class PrimitivesTest {
 
     @BeforeTest
     fun setUp() = runBlocking {
-        init()
+        initCrypto()
     }
 
     @Test
@@ -59,22 +59,6 @@ class PrimitivesTest {
     }
 
     @Test
-    fun testXChaChaPoly1305Const() = runTest {
-        val aead = CipherAlgo.XCHACHA20_POLY1305
-
-        val key1 = "1111111111111111111111111111111111111111111111111111111111111111".hexStringToUByteArray()
-        val key2 = "2222222222222222222222222222222222222222222222222222222222222222".hexStringToUByteArray()
-        val nonce = UByteArray(16) + (1UL).toUByteArray()
-        println("nonce: $nonce")
-
-        val ciphertext1 = aead.encrypt("Hello World".encodeToUByteArray(), UByteArray(0), nonce, key1)
-        assertContentEquals("907917d21ece996ac8ecad83c352805bdca225ae7dfd62412d63c7".hexStringToUByteArray(), ciphertext1)
-
-        val ciphertext2 = aead.encrypt("Hello World".encodeToUByteArray(), UByteArray(0), nonce, key2)
-        assertContentEquals("4f18cd2b55da419599694380882c07a7637b61b610c9cdef867ea0".hexStringToUByteArray(), ciphertext2)
-    }
-
-    @Test
     fun testKeyExchangeConst() = runTest {
         val x25519Seed = "5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb".hexStringToUByteArray()
         val x25519Pubk = ScalarMultiplication.scalarMultiplicationBase(x25519Seed)
@@ -91,6 +75,22 @@ class PrimitivesTest {
 
         assertEquals("1ad7d1f6d5270fbb18123f3bc904c7f97283e7d47bbe85606ee5ded0af2608c5", kexSK.receiveKey.toHexString())
         assertEquals("9aede84a8737da34d203e31b6daed56b52c5316a7c9d028621b2717fdaa2d314", kexSK.sendKey.toHexString())
+    }
+
+    @Test
+    fun testXChaChaPoly1305Const() = runTest {
+        val aead = XChaCha20Poly1305Cipher
+
+        val key1 = "1111111111111111111111111111111111111111111111111111111111111111".hexStringToUByteArray()
+        val key2 = "2222222222222222222222222222222222222222222222222222222222222222".hexStringToUByteArray()
+        val nonce = UByteArray(16) + (1UL).toUByteArray()
+        println("nonce: $nonce")
+
+        val ciphertext1 = aead.encrypt("Hello World".encodeToUByteArray(), UByteArray(0), nonce, key1)
+        assertContentEquals("907917d21ece996ac8ecad83c352805bdca225ae7dfd62412d63c7".hexStringToUByteArray(), ciphertext1)
+
+        val ciphertext2 = aead.encrypt("Hello World".encodeToUByteArray(), UByteArray(0), nonce, key2)
+        assertContentEquals("4f18cd2b55da419599694380882c07a7637b61b610c9cdef867ea0".hexStringToUByteArray(), ciphertext2)
     }
 
     @Test

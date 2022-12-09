@@ -2,11 +2,8 @@
 
 package ch.oxc.nikea
 
-import com.ionspin.kotlin.crypto.box.Box
 import com.ionspin.kotlin.crypto.scalarmult.ScalarMultiplication
 import com.ionspin.kotlin.crypto.signature.Signature
-import com.ionspin.kotlin.crypto.signature.crypto_sign_SEEDBYTES
-import com.ionspin.kotlin.crypto.util.LibsodiumRandom
 import com.ionspin.kotlin.crypto.util.hexStringToUByteArray
 import com.ionspin.kotlin.crypto.util.toHexString
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,40 +15,40 @@ class HandshakeTest {
 
     @BeforeTest
     fun setUp() = runBlocking {
-        init()
+        initCrypto()
     }
 
     @Test
     fun testOpenHandshake() = runTest {
-        val bobIdentKey = Signature.keypair()
-        val bobStatic = Box.keypair()
-        val bobEphemeral = Box.keypair()
+        val bobIdentKey = Ed25519Signature.genKeyPair()
+        val bobStatic = X25519DH.genKeyPair()
+        val bobEphemeral = X25519DH.genKeyPair()
 
-        val aliceIdentKey = Signature.seedKeypair(LibsodiumRandom.buf(crypto_sign_SEEDBYTES))
-        val aliceStatic = Box.keypair()
-        val aliceEphemeral = Box.keypair()
+        val aliceIdentKey = Ed25519Signature.genKeyPair()
+        val aliceStatic = X25519DH.genKeyPair()
+        val aliceEphemeral = X25519DH.genKeyPair()
 
         val bobKeys = Keys(
-            s = KeyPair(bobStatic.secretKey, bobStatic.publicKey),
-            e = KeyPair(bobEphemeral.secretKey, bobEphemeral.publicKey),
-            rs = aliceStatic.publicKey,
-            re = aliceEphemeral.publicKey,
+            s = KeyPair(bobStatic.seck, bobStatic.pubk),
+            e = KeyPair(bobEphemeral.seck, bobEphemeral.pubk),
+            rs = aliceStatic.pubk,
+            re = aliceEphemeral.pubk,
             remoteIdentity = Identity(
-                pubk = aliceIdentKey.publicKey,
-                ssig = Signature.detached(aliceStatic.publicKey, aliceIdentKey.secretKey),
-                esig = Signature.detached(aliceEphemeral.publicKey, aliceIdentKey.secretKey)
+                pubk = aliceIdentKey.pubk,
+                ssig = Ed25519Signature.sign(aliceStatic.pubk, aliceIdentKey.seck),
+                esig = Ed25519Signature.sign(aliceEphemeral.pubk, aliceIdentKey.seck)
             )
         )
 
         val aliceKeys = Keys(
-            s = KeyPair(aliceStatic.secretKey, aliceStatic.publicKey),
-            e = KeyPair(aliceEphemeral.secretKey, aliceEphemeral.publicKey),
-            rs = bobStatic.publicKey,
-            re = bobEphemeral.publicKey,
+            s = KeyPair(aliceStatic.seck, aliceStatic.pubk),
+            e = KeyPair(aliceEphemeral.seck, aliceEphemeral.pubk),
+            rs = bobStatic.pubk,
+            re = bobEphemeral.pubk,
             remoteIdentity = Identity(
-                pubk = bobIdentKey.publicKey,
-                ssig = Signature.detached(bobStatic.publicKey, bobIdentKey.secretKey),
-                esig = Signature.detached(bobEphemeral.publicKey, bobIdentKey.secretKey)
+                pubk = bobIdentKey.pubk,
+                ssig = Ed25519Signature.sign(bobStatic.pubk, bobIdentKey.seck),
+                esig = Ed25519Signature.sign(bobEphemeral.pubk, bobIdentKey.seck)
             )
         )
 
@@ -89,8 +86,8 @@ class HandshakeTest {
             re = aliceEphemeral.pubk,
             remoteIdentity = Identity(
                 pubk = aliceIdentKey.publicKey,
-                ssig = Signature.detached(aliceStatic.pubk, aliceIdentKey.secretKey),
-                esig = Signature.detached(aliceEphemeral.pubk, aliceIdentKey.secretKey)
+                ssig = Ed25519Signature.sign(aliceStatic.pubk, aliceIdentKey.secretKey),
+                esig = Ed25519Signature.sign(aliceEphemeral.pubk, aliceIdentKey.secretKey)
             )
         )
 
@@ -101,8 +98,8 @@ class HandshakeTest {
             re = bobEphemeral.pubk,
             remoteIdentity = Identity(
                 pubk = bobIdentKey.publicKey,
-                ssig = Signature.detached(bobStatic.pubk, bobIdentKey.secretKey),
-                esig = Signature.detached(bobEphemeral.pubk, bobIdentKey.secretKey)
+                ssig = Ed25519Signature.sign(bobStatic.pubk, bobIdentKey.secretKey),
+                esig = Ed25519Signature.sign(bobEphemeral.pubk, bobIdentKey.secretKey)
             )
         )
 
@@ -131,20 +128,20 @@ class HandshakeTest {
 
     @Test
     fun testInvalidRemoteSignature() {
-        val correctIdentity = Signature.keypair()
-        val badIdentity = Signature.keypair()
+        val correctIdentity = Ed25519Signature.genKeyPair()
+        val badIdentity = Ed25519Signature.genKeyPair()
 
-        val static = Box.keypair()
-        val ephemeral = Box.keypair()
+        val static = X25519DH.genKeyPair()
+        val ephemeral = X25519DH.genKeyPair()
 
         val hs = Handshake()
         val exE = assertFailsWith<InvalidRemoteSignatureException>("expect bad signature to fail") {
             hs.verifyRemoteSignature(
-                static.publicKey, ephemeral.publicKey,
+                static.pubk, ephemeral.pubk,
                 Identity(
-                    correctIdentity.publicKey,
-                    Signature.detached(static.publicKey, correctIdentity.secretKey),
-                    Signature.detached(ephemeral.publicKey, badIdentity.secretKey)
+                    correctIdentity.pubk,
+                    Ed25519Signature.sign(static.pubk, correctIdentity.seck),
+                    Ed25519Signature.sign(ephemeral.pubk, badIdentity.seck)
                 )
             )
         }
@@ -152,11 +149,11 @@ class HandshakeTest {
 
         val exS = assertFailsWith<InvalidRemoteSignatureException>("expect bad signature to fail") {
             hs.verifyRemoteSignature(
-                static.publicKey, ephemeral.publicKey,
+                static.pubk, ephemeral.pubk,
                 Identity(
-                    correctIdentity.publicKey,
-                    Signature.detached(static.publicKey, badIdentity.secretKey),
-                    Signature.detached(ephemeral.publicKey, correctIdentity.secretKey)
+                    correctIdentity.pubk,
+                    Ed25519Signature.sign(static.pubk, badIdentity.seck),
+                    Ed25519Signature.sign(ephemeral.pubk, correctIdentity.seck)
                 )
             )
         }

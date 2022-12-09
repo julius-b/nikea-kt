@@ -17,7 +17,7 @@ data class Config(
     val hash: HashAlgo
 )
 
-val DefaultConfig = Config(SignatureAlgo.ED25519, CipherAlgo.XCHACHA20_POLY1305, HashAlgo.SHA512)
+val DefaultConfig = Config(Ed25519Signature, XChaCha20Poly1305Cipher, HashAlgo.SHA512)
 
 data class KeyPair(
     val seck: UByteArray,
@@ -46,7 +46,7 @@ data class Identity(
     val esig: UByteArray
 )
 
-suspend fun init() {
+suspend fun initCrypto() {
     if (!LibsodiumInitializer.isInitialized()) LibsodiumInitializer.initialize()
 }
 
@@ -80,7 +80,6 @@ class Handshake(private val config: Config = DefaultConfig) {
         // save context + intention in hash
         val decH =
             config.hash.hash(SHARED_SECRET.encodeToUByteArray() + dhes.receiveKey + dhss.receiveKey + dhee.receiveKey + dhse.receiveKey)
-        println("decH: ${decH.toHexString()}")
         val encH =
             config.hash.hash(SHARED_SECRET.encodeToUByteArray() + dhes.sendKey + dhss.sendKey + dhee.sendKey + dhse.sendKey)
         return SessionKeys(CipherState(config, CipherStateMode.RX, decH), CipherState(config, CipherStateMode.TX, encH))

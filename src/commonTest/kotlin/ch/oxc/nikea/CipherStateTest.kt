@@ -12,7 +12,7 @@ import kotlin.test.*
 class CipherStateTest {
     @BeforeTest
     fun setUp() = runBlocking {
-        init()
+        initCrypto()
     }
 
     // returns SessionKeys for Alice & Bob
